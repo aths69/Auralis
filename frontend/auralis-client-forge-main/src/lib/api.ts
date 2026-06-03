@@ -114,6 +114,8 @@ export type Post = {
   id: string;
   user: User;
   content: string;
+  captions?: string;
+  image_url?: string | null;
   created_at: string;
   like_count: number;
   comment_count: number;

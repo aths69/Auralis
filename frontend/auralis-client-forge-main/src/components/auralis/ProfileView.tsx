@@ -195,9 +195,27 @@ export function ProfileView({
                 }
               />
             ) : (
-              <div>
+              <div className="grid grid-cols-3 gap-1">
                 {items.map((p) => (
-                  <PostCard key={p.id} post={p} />
+                  <div key={p.id} className="relative aspect-square overflow-hidden bg-surface-2 group">
+                    {p.image_url ? (
+                      <img
+                        src={`http://localhost:8000${p.image_url}`}
+                        alt=""
+                        className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center p-4">
+                        <p className="line-clamp-3 text-xs font-medium text-muted-foreground text-center">
+                          {p.content || p.captions}
+                        </p>
+                      </div>
+                    )}
+                    <Link
+                      to="/feed"
+                      className="absolute inset-0 z-10 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover:opacity-100"
+                    />
+                  </div>
                 ))}
               </div>
             );

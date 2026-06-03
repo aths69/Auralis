@@ -43,21 +43,25 @@ def get_user_posts(user_id : int,db,limit,offset):
     return posts
 
 def create_post(image,captions,db,auth_user):
+    if not image and not captions:
+        raise HTTPException(status_code=400,detail = "Post must have an image or text content")
 
-    if not image.content_type or not image.content_type.startswith("image/"):
-        raise HTTPException(status_code=400,detail = "Only image files are allowed")
+    image_url = None
+    if image:
+        if not image.content_type or not image.content_type.startswith("image/"):
+            raise HTTPException(status_code=400,detail = "Only image files are allowed")
 
-    extension = Path(image.filename).suffix.lower()
-    filename = f"{uuid.uuid4()}{extension}"
+        extension = Path(image.filename).suffix.lower()
+        filename = f"{uuid.uuid4()}{extension}"
 
-    upload_dir = Path("app/uploads/posts")
-    upload_dir.mkdir(parents=True,exist_ok=True)
-    file_path = upload_dir/filename
+        upload_dir = Path("app/uploads/posts")
+        upload_dir.mkdir(parents=True,exist_ok=True)
+        file_path = upload_dir/filename
 
-    with file_path.open("wb") as buffer:
-          buffer.write(image.file.read())
+        with file_path.open("wb") as buffer:
+              buffer.write(image.file.read())
 
-    image_url = f"/uploads/posts/{filename}"
+        image_url = f"/uploads/posts/{filename}"
 
     new_post = PostModel(captions = captions,image_url = image_url,owner_id=auth_user.id)
 
@@ -109,7 +113,7 @@ def delete_all(db,auth_user):
 
     image_paths = [
            Path("app") / post.image_url.lstrip("/")
-           for post in posts
+           for post in posts if post.image_url
        ]
 
     for post in posts:
@@ -142,8 +146,9 @@ def delete_post(post_id : int,db,auth_user):
     db.delete(post)
     db.commit()
 
-    image_path = Path("app") / image_url.lstrip("/")
-    if image_path.exists():
-        image_path.unlink()
+    if image_url:
+        image_path = Path("app") / image_url.lstrip("/")
+        if image_path.exists():
+            image_path.unlink()
 
     return {"message" : "Post deleted succcessfully"}

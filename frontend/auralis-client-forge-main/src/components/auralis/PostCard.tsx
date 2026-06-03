@@ -137,8 +137,18 @@ export function PostCard({ post }: { post: Post }) {
           </div>
 
           <p className="mt-1.5 whitespace-pre-wrap break-words text-[15px] leading-relaxed text-foreground">
-            {post.content}
+            {post.content || post.captions}
           </p>
+
+          {post.image_url ? (
+            <div className="mt-3 overflow-hidden rounded-xl border border-border/70">
+              <img
+                src={`http://localhost:8000${post.image_url}`}
+                alt="Post attachment"
+                className="max-h-[500px] w-full object-cover"
+              />
+            </div>
+          ) : null}
 
           <div className="mt-3 flex items-center gap-1 text-muted-foreground">
             <ActionBtn
@@ -168,7 +178,7 @@ export function PostCard({ post }: { post: Post }) {
       </div>
 
       <CommentsSheet post={post} open={comments} onOpenChange={setComments} />
-      <ComposeDialog open={edit} onOpenChange={setEdit} initial={post.content} postId={post.id} />
+      <ComposeDialog open={edit} onOpenChange={setEdit} initial={post.content || post.captions} postId={post.id} />
 
       <AlertDialog open={confirmDelete} onOpenChange={setConfirmDelete}>
         <AlertDialogContent>

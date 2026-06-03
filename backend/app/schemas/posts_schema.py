@@ -4,18 +4,18 @@ from typing  import Optional
 
 class PostSchema(BaseModel):
 
-    captions : Optional[str]
-    image_url : str
+    captions : Optional[str] = None
+    image_url : Optional[str] = None
 
 class UpdatePost(BaseModel):
-    captions : Optional[str]
-    image_url : str
+    captions : Optional[str] = None
+    image_url : Optional[str] = None
 
 class PostResponse(BaseModel):
 
     id : int
-    captions : Optional[str]
-    image_url : str
+    captions : Optional[str] = None
+    image_url : Optional[str] = None
     owner_id : int
     created_at : datetime
     likes_count : int
@@ -23,7 +23,7 @@ class PostResponse(BaseModel):
 
 class CreateAndUpdateResponse(BaseModel):
     id : int
-    captions : Optional[str]
-    image_url : str
+    captions : Optional[str] = None
+    image_url : Optional[str] = None
     owner_id : int
     created_at : datetime

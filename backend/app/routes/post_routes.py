@@ -17,7 +17,7 @@ def user_posts(user_id : int,db : Session = Depends(get_db),limit : int = Query(
     return get_user_posts(user_id,db,limit,offset)
 
 @post_router.post("/create",response_model=CreateAndUpdateResponse)
-def post_create(image : UploadFile = File(),captions : Optional[str] = Form(None),db : Session = Depends(get_db),auth_user = Depends(get_current_user)):
+def post_create(image : Optional[UploadFile] = File(None),captions : Optional[str] = Form(None),db : Session = Depends(get_db),auth_user = Depends(get_current_user)):
     return create_post(image,captions,db,auth_user)
 
 @post_router.patch("/update/{post_id}",response_model=CreateAndUpdateResponse)

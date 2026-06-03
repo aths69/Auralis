@@ -37,7 +37,8 @@ def public_profile(user_id,db):
             "following" : following_count,
             "posts" : [{
                      "id": post.id,
-                     "image_url": post.image_url
+                     "image_url": post.image_url,
+                     "captions": post.captions
                     }for post in user_posts]}
 
 

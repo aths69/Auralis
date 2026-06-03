@@ -43,7 +43,8 @@ class PasswordUpdateResponse(BaseModel):
 
 class PostPreview(BaseModel):
     id: int
-    image_url: str
+    image_url: Optional[str] = None
+    captions: Optional[str] = None
 
 class PublicProfile(BaseModel):
     id : int

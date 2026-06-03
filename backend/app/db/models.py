@@ -29,7 +29,7 @@ class PostModel(Base):
     __tablename__ = "posts"
     id = Column(Integer,primary_key=True,index = True)
     captions = Column(String)
-    image_url = Column(String,nullable=False)
+    image_url = Column(String,nullable=True)
     owner_id = Column(Integer,ForeignKey("users.id"),nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
