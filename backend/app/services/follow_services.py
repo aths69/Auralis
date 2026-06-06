@@ -69,7 +69,7 @@ def get_followers(user_id, db):
 
     followers = db.query(UsersModel).join(FollowModel,FollowModel.follower_id == UsersModel.id).filter(FollowModel.following_id == user_id).all()
 
-    return followers
+    return [{"id": f.id, "username": f.username, "avatar_url": f.profile_pic} for f in followers]
 
 def get_following(user_id, db):
 
@@ -80,4 +80,4 @@ def get_following(user_id, db):
 
     following = db.query(UsersModel).join(FollowModel,FollowModel.following_id == UsersModel.id).filter(FollowModel.follower_id == user_id).all()
 
-    return following
+    return [{"id": f.id, "username": f.username, "avatar_url": f.profile_pic} for f in following]

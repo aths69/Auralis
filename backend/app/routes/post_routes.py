@@ -9,12 +9,12 @@ from typing import List,Optional
 post_router = APIRouter(tags=['Posts'],prefix="/posts")
 
 @post_router.get("/feed",response_model=List[PostResponse])
-def feed(db : Session = Depends(get_db),limit : int = Query(default=10,ge=1,le=50),offset : int = Query(default=0,ge = 0)):
-    return get_feed(db,limit,offset)
+def feed(db : Session = Depends(get_db),limit : int = Query(default=10,ge=1,le=50),offset : int = Query(default=0,ge = 0), auth_user = Depends(get_current_user)):
+    return get_feed(db,limit,offset, auth_user.id if auth_user else None)
 
 @post_router.get("/user/{user_id}",response_model=List[PostResponse])
-def user_posts(user_id : int,db : Session = Depends(get_db),limit : int = Query(default=10,ge=1,le=50),offset : int = Query(default=0,ge = 0)):
-    return get_user_posts(user_id,db,limit,offset)
+def user_posts(user_id : int,db : Session = Depends(get_db),limit : int = Query(default=10,ge=1,le=50),offset : int = Query(default=0,ge = 0), auth_user = Depends(get_current_user)):
+    return get_user_posts(user_id,db,limit,offset, auth_user.id if auth_user else None)
 
 @post_router.post("/create",response_model=CreateAndUpdateResponse)
 def post_create(image : Optional[UploadFile] = File(None),captions : Optional[str] = Form(None),db : Session = Depends(get_db),auth_user = Depends(get_current_user)):

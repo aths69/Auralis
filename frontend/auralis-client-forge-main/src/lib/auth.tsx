@@ -50,9 +50,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback(
     async (email: string, password: string) => {
+      const form = new FormData();
+      form.append("username", email);
+      form.append("password", password);
+
       const res = await api<{ token?: string; access_token?: string; user?: User }>(
         "/login",
-        { method: "POST", body: { email, password }, auth: false },
+        { method: "POST", form, auth: false },
       );
       const t = res.token ?? res.access_token ?? null;
       if (!t) throw new Error("No token returned from server.");

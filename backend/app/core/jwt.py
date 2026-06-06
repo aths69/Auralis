@@ -43,7 +43,7 @@ class JWTSERVICE:
         try:
            return jwt.decode(token,SECRET,algorithms=[ALGORITHM])
         except JWTError as ex:
-            print(f"Error in jwt decode : {str(ex)}")
+            pass
         return None
 
     def create_email_verification_token(self,email : str) -> str:

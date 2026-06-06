@@ -72,6 +72,9 @@ def login(db, request: OAuth2PasswordRequestForm = Depends()):
      if not existing_user:
          raise HTTPException(status_code=404, detail="Invalid Credentials")
 
+     if not existing_user.is_verified:
+         raise HTTPException(status_code=400, detail="Please verify your email before logging in.")
+
      check_pass = verify_password(request.password,existing_user.password)
 
      if not check_pass:
@@ -88,7 +91,7 @@ def verify_email(db,token):
         raise HTTPException(status_code=400,detail="Invalid or expired verification token")
 
     user.verification_token = None
-    user.is_verifed = True
+    user.is_verified = True
 
     db.commit()
     db.refresh(user)

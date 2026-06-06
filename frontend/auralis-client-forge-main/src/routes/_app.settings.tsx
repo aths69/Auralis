@@ -108,7 +108,7 @@ function AvatarSection({
     setPending(true);
     try {
       const form = new FormData();
-      form.append("avatar", f);
+      form.append("image", f);
       await api("/profile/picture", { method: "PATCH", form });
       toast.success("Profile picture updated");
       onDone();

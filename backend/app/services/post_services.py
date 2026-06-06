@@ -3,7 +3,7 @@ from app.db.models import PostModel,LikesModel,CommentsModel
 import uuid
 from pathlib import Path
 
-def get_feed(db,limit,offset):
+def get_feed(db,limit,offset, current_user_id=None):
     posts = db.query(PostModel).order_by(PostModel.created_at.desc()).limit(limit).offset(offset).all()
 
     feed = []
@@ -12,17 +12,30 @@ def get_feed(db,limit,offset):
         likes_count = db.query(LikesModel).filter(LikesModel.post_id == post.id).count()
         comments_count = db.query(CommentsModel).filter(CommentsModel.post_id == post.id).count()
 
-        feed.append({ "id": post.id,
-                     "captions": post.captions,
-                     "image_url": post.image_url,
-                     "owner_id": post.owner_id,
-                     "created_at": post.created_at,
-                     "likes_count": likes_count,
-                     "comments_count" : comments_count
-                    })
+        liked_by_me = False
+        if current_user_id:
+            liked_by_me = db.query(LikesModel).filter(LikesModel.post_id == post.id, LikesModel.user_id == current_user_id).first() is not None
+
+        feed.append({
+            "id": post.id,
+            "content": post.captions or "",
+            "captions": post.captions,
+            "image_url": post.image_url,
+            "created_at": post.created_at,
+            "like_count": likes_count,
+            "comment_count" : comments_count,
+            "liked_by_me": liked_by_me,
+            "user": {
+                "id": post.user.id,
+                "username": post.user.username,
+                "email": post.user.email,
+                "bio": post.user.bio,
+                "avatar_url": post.user.profile_pic
+            }
+        })
     return feed
 
-def get_user_posts(user_id : int,db,limit,offset):
+def get_user_posts(user_id : int,db,limit,offset, current_user_id=None):
     user_posts = db.query(PostModel).filter(PostModel.owner_id == user_id).order_by(PostModel.created_at.desc()).limit(limit).offset(offset).all()
 
     posts = []
@@ -31,14 +44,27 @@ def get_user_posts(user_id : int,db,limit,offset):
         likes_count = db.query(LikesModel).filter(LikesModel.post_id == post.id).count()
         comments_count = db.query(CommentsModel).filter(CommentsModel.post_id == post.id).count()
 
-        posts.append({ "id": post.id,
-                     "captions": post.captions,
-                     "image_url": post.image_url,
-                     "owner_id": post.owner_id,
-                     "created_at": post.created_at,
-                     "likes_count": likes_count,
-                     "comments_count" : comments_count
-                    })
+        liked_by_me = False
+        if current_user_id:
+            liked_by_me = db.query(LikesModel).filter(LikesModel.post_id == post.id, LikesModel.user_id == current_user_id).first() is not None
+
+        posts.append({
+            "id": post.id,
+            "content": post.captions or "",
+            "captions": post.captions,
+            "image_url": post.image_url,
+            "created_at": post.created_at,
+            "like_count": likes_count,
+            "comment_count" : comments_count,
+            "liked_by_me": liked_by_me,
+            "user": {
+                "id": post.user.id,
+                "username": post.user.username,
+                "email": post.user.email,
+                "bio": post.user.bio,
+                "avatar_url": post.user.profile_pic
+            }
+        })
 
     return posts
 

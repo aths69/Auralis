@@ -53,7 +53,7 @@ function SignupPage() {
     form.append("username", username);
     form.append("password", password);
     form.append("bio", bio);
-    if (avatar) form.append("avatar", avatar);
+    if (avatar) form.append("image", avatar);
 
     setPending(true);
     try {

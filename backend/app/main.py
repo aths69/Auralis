@@ -10,13 +10,21 @@ from app.routes.follow_routes import follow_router
 from app.routes.search_routes import search_router
 from app.routes.notification_routes import noti_router
 from fastapi.middleware.cors import CORSMiddleware
+import os
+from dotenv import load_dotenv
 
+load_dotenv()
 
 app = FastAPI()
 
+origins = ["http://localhost:8080"]
+frontend_url = os.getenv("FRONTEND_URL")
+if frontend_url:
+    origins.append(frontend_url)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8080"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

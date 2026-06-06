@@ -3,15 +3,20 @@ from datetime import datetime
 from typing import List
 
 
+from typing import Optional
+
+class Actor(BaseModel):
+    id: str
+    username: str
+    avatar_url: Optional[str] = None
+
 class NotificationResponse(BaseModel):
     id: int
-    sender_id: int
-    sender_username: str
-    sender_profile_pic: str
+    type: str = "notification"
     message: str
-    post_id: int | None
-    is_read: bool
+    read: bool
     created_at: datetime
+    actor: Optional[Actor] = None
 
 class NotificationsResponse(BaseModel):
     notifications : List[NotificationResponse]
@@ -20,4 +25,4 @@ class ReadNotification(BaseModel):
     message : str
 
 class UnReadResposnse(BaseModel):
-    unread_count : int
+    count : int

@@ -1,5 +1,6 @@
+from typing import List
 from app.db.database import get_db
-from app.schemas.notification_schema import NotificationsResponse,ReadNotification,UnReadResposnse
+from app.schemas.notification_schema import NotificationResponse,ReadNotification,UnReadResposnse
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.services.notification_sevices import get_all_notifications,update_read,count_unread_notifications
@@ -7,7 +8,7 @@ from app.core.jwt import get_current_user
 
 noti_router = APIRouter(tags=['Notifications'],prefix="/notifications")
 
-@noti_router.get("/",response_model=NotificationsResponse)
+@noti_router.get("/",response_model=List[NotificationResponse])
 def get_notifications(db : Session = Depends(get_db),auth_user = Depends(get_current_user)):
     return get_all_notifications(db,auth_user)
 

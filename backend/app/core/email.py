@@ -16,7 +16,6 @@ VERIFY_EMAIL_URL = os.getenv("VERIFY_EMAIL_URL") or ""
 
 def send_verification_email(to_email, token):
     verification_link = f"{VERIFY_EMAIL_URL}?token={token}"
-    print(verification_link)
 
     plain_body = f"Verify your account by visiting this link:\n{verification_link}"
 
@@ -61,9 +60,7 @@ def send_verification_email(to_email, token):
             to_email,
             message.as_string()
         )
-        print("EMAIL SENT SUCCESSFULLY")
     except Exception as e:
-        print("EMAIL ERROR:", e)
         raise
     finally:
         if server:

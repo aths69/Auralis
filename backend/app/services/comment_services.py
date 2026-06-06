@@ -7,7 +7,22 @@ def all_comments(post_id,db,limit,offset):
         raise HTTPException(status_code=404,detail="Post not found")
 
     comments = db.query(CommentsModel).filter(CommentsModel.post_id == post_id).order_by(CommentsModel.created_at.asc()).limit(limit).offset(offset).all()
-    return comments
+    
+    result = []
+    for c in comments:
+        result.append({
+            "id": c.id,
+            "content": c.comment,
+            "created_at": c.created_at,
+            "user": {
+                "id": c.user.id,
+                "username": c.user.username,
+                "email": c.user.email,
+                "bio": c.user.bio,
+                "avatar_url": c.user.profile_pic
+            }
+        })
+    return result
 
 
 def add_comment(post_id,db,auth_user,comment):
@@ -17,7 +32,7 @@ def add_comment(post_id,db,auth_user,comment):
     if not post:
         raise HTTPException(status_code=404,detail="Post not found")
 
-    new_comment = CommentsModel(comment = comment.comment,user_id = auth_user.id,post_id = post_id)
+    new_comment = CommentsModel(comment = comment.content,user_id = auth_user.id,post_id = post_id)
 
     db.add(new_comment)
     if post.owner_id != auth_user.id:
@@ -32,7 +47,18 @@ def add_comment(post_id,db,auth_user,comment):
     db.commit()
     db.refresh(new_comment)
 
-    return new_comment
+    return {
+        "id": new_comment.id,
+        "content": new_comment.comment,
+        "created_at": new_comment.created_at,
+        "user": {
+            "id": auth_user.id,
+            "username": auth_user.username,
+            "email": auth_user.email,
+            "bio": auth_user.bio,
+            "avatar_url": auth_user.profile_pic
+        }
+    }
 
 def delete_comment(post_id,comment_id,db,auth_user):
     post = db.query(PostModel).filter(PostModel.id == post_id).first()

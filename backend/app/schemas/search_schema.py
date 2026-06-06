@@ -3,4 +3,5 @@ from typing import Optional
 class SearchUser(BaseModel):
     id : int
     username : str
-    profile_pic : Optional[str] = None
+    avatar_url : Optional[str] = None
+    followers_count: int = 0

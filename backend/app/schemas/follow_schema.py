@@ -6,7 +6,7 @@ class FollowResponse(BaseModel):
 class FollowUser(BaseModel):
     id: int
     username: str
-    profile_pic: str | None = None
+    avatar_url: str | None = None
 
     class Config:
         from_attributes = True

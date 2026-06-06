@@ -9,32 +9,42 @@ import uuid
 
 def profile(db,auth_user):
    stats = get_follow_stats(auth_user.id,db)
+   posts_count = db.query(PostModel).filter(PostModel.owner_id == auth_user.id).count()
+   
    return {"id": auth_user.id,
            "email": auth_user.email,
            "username": auth_user.username,
            "bio": auth_user.bio,
-           "profile_pic": auth_user.profile_pic,
-           "followers": stats["followers"],
-           "following": stats["following"]}
+           "avatar_url": auth_user.profile_pic,
+           "followers_count": stats["followers"],
+           "following_count": stats["following"],
+           "posts_count": posts_count}
 
-def public_profile(user_id,db):
+def public_profile(user_id,db,current_user_id=None):
     existing_user = db.query(UsersModel).filter(UsersModel.id == user_id).first()
 
     if not existing_user:
         raise HTTPException(status_code=404,detail="User not found")
 
     user_posts = db.query(PostModel).filter(PostModel.owner_id == user_id).order_by(PostModel.created_at.desc()).all()
+    posts_count = len(user_posts)
 
     followers_count = db.query(FollowModel).filter(FollowModel.following_id == user_id).count()
 
     following_count = db.query(FollowModel).filter(FollowModel.follower_id == user_id).count()
 
+    is_following = False
+    if current_user_id:
+        is_following = db.query(FollowModel).filter(FollowModel.follower_id == current_user_id, FollowModel.following_id == user_id).first() is not None
+
     return {"id" : existing_user.id,
-            "profile_pic" : existing_user.profile_pic,
+            "avatar_url" : existing_user.profile_pic,
             "username" : existing_user.username,
             "bio" : existing_user.bio,
-            "followers" : followers_count,
-            "following" : following_count,
+            "followers_count" : followers_count,
+            "following_count" : following_count,
+            "posts_count" : posts_count,
+            "is_following" : is_following,
             "posts" : [{
                      "id": post.id,
                      "image_url": post.image_url,

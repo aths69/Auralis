@@ -7,7 +7,7 @@ import {
   type UseQueryResult,
 } from "@tanstack/react-query";
 import { Settings as SettingsIcon } from "lucide-react";
-import { api, type Post, type User } from "@/lib/api";
+import { api, type Post, type User, getImageUrl } from "@/lib/api";
 import { UserAvatar } from "./UserAvatar";
 import { PostCard } from "./PostCard";
 import { EmptyState, ErrorState, PostSkeleton } from "./States";
@@ -50,8 +50,8 @@ export function ProfileView({
     mutationFn: async (next: boolean) =>
       api(`/follow/${user.id}`, { method: next ? "POST" : "DELETE" }),
     onMutate: async (next) => {
-      await qc.cancelQueries({ queryKey: ["profile", user.id] });
-      const key = ["profile", user.id];
+      const key = ["profile", String(user.id)];
+      await qc.cancelQueries({ queryKey: key });
       const prev = qc.getQueryData<User>(key);
       qc.setQueryData<User>(key, (old) =>
         old
@@ -65,11 +65,14 @@ export function ProfileView({
             }
           : old,
       );
-      return { prev };
+      return { prev, key };
     },
     onError: (_e, _v, ctx) => {
-      if (ctx?.prev) qc.setQueryData(["profile", user.id], ctx.prev);
+      if (ctx?.prev && ctx?.key) qc.setQueryData(ctx.key, ctx.prev);
       toast.error("Couldn't update follow");
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ["profile", String(user.id)] });
     },
   });
 
@@ -200,7 +203,7 @@ export function ProfileView({
                   <div key={p.id} className="relative aspect-square overflow-hidden bg-surface-2 group">
                     {p.image_url ? (
                       <img
-                        src={`http://localhost:8000${p.image_url}`}
+                        src={getImageUrl(p.image_url)}
                         alt=""
                         className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
                       />

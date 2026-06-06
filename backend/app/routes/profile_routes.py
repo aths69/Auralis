@@ -15,8 +15,8 @@ def user_profile(db : Session = Depends(get_db),auth_user = Depends(get_current_
     return profile(db,auth_user)
 
 @profile_router.get("/{user_id}",response_model=PublicProfile)
-def get_public_profile(user_id : int,db : Session = Depends(get_db)):
-    return public_profile(user_id,db)
+def get_public_profile(user_id : int,db : Session = Depends(get_db), auth_user = Depends(get_current_user)):
+    return public_profile(user_id,db, current_user_id=auth_user.id if auth_user else None)
 
 @profile_router.patch("/picture",response_model = ProfilePicResponse)
 def pp_update(image : UploadFile = File() ,db : Session = Depends(get_db),auth_user = Depends(get_current_user)):

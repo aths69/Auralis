@@ -26,7 +26,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { api, type Post } from "@/lib/api";
+import { api, type Post, getImageUrl } from "@/lib/api";
 import { compactCount, timeAgo } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { UserAvatar } from "./UserAvatar";
@@ -143,7 +143,7 @@ export function PostCard({ post }: { post: Post }) {
           {post.image_url ? (
             <div className="mt-3 overflow-hidden rounded-xl border border-border/70">
               <img
-                src={`http://localhost:8000${post.image_url}`}
+                src={getImageUrl(post.image_url)}
                 alt="Post attachment"
                 className="max-h-[500px] w-full object-cover"
               />

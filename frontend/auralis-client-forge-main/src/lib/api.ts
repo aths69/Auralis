@@ -3,6 +3,12 @@
 const RAW_BASE = (import.meta.env.VITE_API_URL as string | undefined) ?? "";
 export const API_BASE = RAW_BASE.replace(/\/$/, "");
 
+export function getImageUrl(url?: string | null): string | undefined {
+  if (!url) return undefined;
+  if (url.startsWith("http")) return url;
+  return `${API_BASE}${url}`;
+}
+
 const TOKEN_KEY = "auralis_token";
 
 export function getToken(): string | null {
@@ -88,7 +94,9 @@ export async function api<T = unknown>(path: string, opts: Options = {}): Promis
         ? String((data as { message: unknown }).message)
         : null) ??
       (data && typeof data === "object" && "detail" in data
-        ? String((data as { detail: unknown }).detail)
+        ? (Array.isArray((data as { detail: unknown }).detail) 
+            ? (data as { detail: any[] }).detail.map(e => e.msg).join(", ") 
+            : String((data as { detail: unknown }).detail))
         : null) ??
       `Request failed (${res.status})`;
     throw new ApiError(msg, res.status, data);

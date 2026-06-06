@@ -3,11 +3,12 @@ from typing import Optional,List
 
 class UserProfile(BaseModel):
     id : int
-    profile_pic : Optional[str] = None
+    avatar_url : Optional[str] = None
     username : str
-    bio : str
-    followers : int
-    following : int
+    bio : Optional[str] = None
+    followers_count : int
+    following_count : int
+    posts_count : int
 
 class UpdateProfilePic(BaseModel):
     profile_pic : str
@@ -48,9 +49,11 @@ class PostPreview(BaseModel):
 
 class PublicProfile(BaseModel):
     id : int
-    profile_pic : str
+    avatar_url : Optional[str] = None
     username : str
-    bio : str
-    followers : int
-    following : int
+    bio : Optional[str] = None
+    followers_count : int
+    following_count : int
+    posts_count : int
+    is_following : Optional[bool] = False
     posts : List[PostPreview]
