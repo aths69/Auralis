@@ -11,7 +11,7 @@ app.use("/*", serveStatic({ root: "./dist/client" }));
 // 2. Fallback all other requests to TanStack Start's SSR handler
 app.all("*", (c) => {
   const handler = serverEntry.default ? serverEntry.default.fetch : serverEntry.fetch;
-  return handler(c.req.raw, process.env, c.executionCtx);
+  return handler(c.req.raw, process.env, undefined);
 });
 
 const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
