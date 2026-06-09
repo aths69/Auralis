@@ -1,8 +1,5 @@
 import os
 from dotenv import load_dotenv
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 
 load_dotenv()
 
@@ -14,10 +11,11 @@ EMAIL_FROM = os.getenv("EMAIL_FROM") or ""
 VERIFY_EMAIL_URL = os.getenv("VERIFY_EMAIL_URL") or ""
 
 
+import json
+import urllib.request
+
 def send_verification_email(to_email, token):
     verification_link = f"{VERIFY_EMAIL_URL}?token={token}"
-
-    plain_body = f"Verify your account by visiting this link:\n{verification_link}"
 
     html_body = f"""
     <html>
@@ -39,29 +37,32 @@ def send_verification_email(to_email, token):
     </html>
     """
 
-    message = MIMEMultipart("alternative")
-    message["Subject"] = "Verify your account"
-    message["From"] = EMAIL_FROM
-    message["To"] = to_email
+    print(f"VERIFICATION LINK FOR {to_email}: {verification_link}", flush=True)
 
-    message.attach(MIMEText(plain_body, "plain"))
-    message.attach(MIMEText(html_body, "html"))
+    resend_api_key = os.getenv("RESEND_API_KEY")
+    
+    if not resend_api_key:
+        print("Warning: RESEND_API_KEY is not set. Cannot send email.")
+        return
 
-    server = None
+    req = urllib.request.Request("https://api.resend.com/emails", method="POST")
+    req.add_header("Authorization", f"Bearer {resend_api_key}")
+    req.add_header("Content-Type", "application/json")
+    
+    # NOTE: Resend requires a verified domain to send from any address other than onboarding@resend.dev
+    # And onboarding@resend.dev can only send TO the email address you registered your Resend account with!
+    data = {
+        "from": "Auralis <onboarding@resend.dev>", 
+        "to": [to_email],
+        "subject": "Verify your Auralis account",
+        "html": html_body
+    }
+    
     try:
-        server = smtplib.SMTP(SMTP_HOST, int(SMTP_PORT))
-        server.starttls()
-        server.login(
-            SMTP_USERNAME,
-            SMTP_PASSWORD
-        )
-        server.sendmail(
-            EMAIL_FROM,
-            to_email,
-            message.as_string()
-        )
+        with urllib.request.urlopen(req, data=json.dumps(data).encode("utf-8"), timeout=10) as response:
+            print(f"Resend success: {response.status}")
     except Exception as e:
+        if hasattr(e, 'read'):
+            print(f"Resend API Error: {e.read().decode('utf-8')}")
+        print(f"Failed to send email via Resend: {e}")
         raise
-    finally:
-        if server:
-            server.quit()

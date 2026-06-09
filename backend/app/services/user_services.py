@@ -8,7 +8,13 @@ from pathlib import Path
 import uuid
 import secrets
 
-def signup(db, email,username,password,bio,image):
+def send_email_background(email: str, token: str):
+    try:
+        send_verification_email(email, token)
+    except Exception as e:
+        print(f"Failed to send verification email to {email}: {e}")
+
+def signup(db, email,username,password,bio,image, background_tasks):
 
      existing_user = db.query(UsersModel).filter(UsersModel.email == email).first()
 
@@ -59,7 +65,7 @@ def signup(db, email,username,password,bio,image):
      db.commit()
      db.refresh(new_user)
 
-     send_verification_email(new_user.email,verification_token)
+     background_tasks.add_task(send_email_background, new_user.email, verification_token)
 
      return new_user
 
