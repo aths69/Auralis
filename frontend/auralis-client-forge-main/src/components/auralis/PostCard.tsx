@@ -65,6 +65,28 @@ export function PostCard({ post }: { post: Post }) {
     },
   });
 
+  const follow = useMutation({
+    mutationFn: async (next: boolean) =>
+      api(`/follow/${post.user.id}`, { method: next ? "POST" : "DELETE" }),
+    onMutate: async (next) => {
+      await qc.cancelQueries({ queryKey: ["feed"] });
+      const prev = qc.getQueriesData({ queryKey: ["feed"] });
+      qc.setQueriesData<{ pages: { items: Post[] }[] } | Post[]>(
+        { queryKey: ["feed"] },
+        (old) => bumpFollow(old, post.user.id, next),
+      );
+      qc.setQueriesData<{ pages: { items: Post[] }[] } | Post[]>(
+        { queryKey: ["user-posts"] },
+        (old) => bumpFollow(old, post.user.id, next),
+      );
+      return { prev };
+    },
+    onError: (_e, _v, ctx) => {
+      ctx?.prev?.forEach(([k, v]) => qc.setQueryData(k, v));
+      toast.error("Couldn't update follow");
+    },
+  });
+
   const del = useMutation({
     mutationFn: () => api(`/posts/delete/${post.id}`, { method: "DELETE" }),
     onSuccess: () => {
@@ -108,6 +130,18 @@ export function PostCard({ post }: { post: Post }) {
             <time className="text-xs text-muted-foreground" dateTime={post.created_at}>
               {timeAgo(post.created_at)}
             </time>
+            {user && !isMine && (
+              <>
+                <span className="text-muted-foreground">·</span>
+                <button
+                  type="button"
+                  onClick={() => follow.mutate(!post.user.is_following)}
+                  className="text-sm font-medium text-blue-500 hover:text-blue-600 transition-colors"
+                >
+                  {post.user.is_following ? "Following" : "Follow"}
+                </button>
+              </>
+            )}
             <div className="ml-auto">
               {isMine ? (
                 <DropdownMenu>
@@ -243,6 +277,23 @@ function bump<T>(old: T, id: string, next: boolean): T {
           liked_by_me: next,
           like_count: Math.max(0, (p.like_count ?? 0) + (next ? 1 : -1)),
         }
+      : p;
+  if (!old) return old;
+  if (Array.isArray(old)) return old.map(apply) as T;
+  const o = old as unknown as { pages?: { items: Post[] }[] };
+  if (o?.pages) {
+    return {
+      ...(old as object),
+      pages: o.pages.map((pg) => ({ ...pg, items: pg.items.map(apply) })),
+    } as T;
+  }
+  return old;
+}
+
+function bumpFollow<T>(old: T, userId: string, next: boolean): T {
+  const apply = (p: Post): Post =>
+    p.user.id === userId
+      ? { ...p, user: { ...p.user, is_following: next } }
       : p;
   if (!old) return old;
   if (Array.isArray(old)) return old.map(apply) as T;

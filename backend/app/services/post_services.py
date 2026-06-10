@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from app.db.models import PostModel,LikesModel,CommentsModel
+from app.db.models import PostModel,LikesModel,CommentsModel,FollowModel
 import uuid
 from pathlib import Path
 import cloudinary.uploader
@@ -13,9 +13,10 @@ def get_feed(db,limit,offset, current_user_id=None):
         likes_count = db.query(LikesModel).filter(LikesModel.post_id == post.id).count()
         comments_count = db.query(CommentsModel).filter(CommentsModel.post_id == post.id).count()
 
-        liked_by_me = False
+        is_following = False
         if current_user_id:
             liked_by_me = db.query(LikesModel).filter(LikesModel.post_id == post.id, LikesModel.user_id == current_user_id).first() is not None
+            is_following = db.query(FollowModel).filter(FollowModel.follower_id == current_user_id, FollowModel.following_id == post.user.id).first() is not None
 
         feed.append({
             "id": post.id,
@@ -31,7 +32,8 @@ def get_feed(db,limit,offset, current_user_id=None):
                 "username": post.user.username,
                 "email": post.user.email,
                 "bio": post.user.bio,
-                "avatar_url": post.user.profile_pic
+                "avatar_url": post.user.profile_pic,
+                "is_following": is_following
             }
         })
     return feed
@@ -45,9 +47,10 @@ def get_user_posts(user_id : int,db,limit,offset, current_user_id=None):
         likes_count = db.query(LikesModel).filter(LikesModel.post_id == post.id).count()
         comments_count = db.query(CommentsModel).filter(CommentsModel.post_id == post.id).count()
 
-        liked_by_me = False
+        is_following = False
         if current_user_id:
             liked_by_me = db.query(LikesModel).filter(LikesModel.post_id == post.id, LikesModel.user_id == current_user_id).first() is not None
+            is_following = db.query(FollowModel).filter(FollowModel.follower_id == current_user_id, FollowModel.following_id == post.user.id).first() is not None
 
         posts.append({
             "id": post.id,
@@ -63,7 +66,8 @@ def get_user_posts(user_id : int,db,limit,offset, current_user_id=None):
                 "username": post.user.username,
                 "email": post.user.email,
                 "bio": post.user.bio,
-                "avatar_url": post.user.profile_pic
+                "avatar_url": post.user.profile_pic,
+                "is_following": is_following
             }
         })
 
