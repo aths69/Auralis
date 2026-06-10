@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from app.db.models import PostModel,LikesModel,CommentsModel,FollowModel
+from app.db.models import PostModel,LikesModel,CommentsModel,FollowModel,NotificationModel
 import uuid
 from pathlib import Path
 import cloudinary.uploader
@@ -137,6 +137,7 @@ def delete_all(db,auth_user):
     image_urls = [post.image_url for post in posts if post.image_url]
 
     for post in posts:
+        db.query(NotificationModel).filter(NotificationModel.post_id == post.id).delete()
         db.query(CommentsModel).filter(CommentsModel.post_id == post.id).delete()
         db.query(LikesModel).filter(LikesModel.post_id == post.id).delete()
         db.delete(post)
@@ -173,6 +174,7 @@ def delete_post(post_id : int,db,auth_user):
         raise HTTPException(status_code=403,detail="Unauthorized")
 
     image_url = post.image_url
+    db.query(NotificationModel).filter(NotificationModel.post_id == post_id).delete()
     db.query(CommentsModel).filter(CommentsModel.post_id == post_id).delete()
     db.query(LikesModel).filter(LikesModel.post_id == post_id).delete()
 
