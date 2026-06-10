@@ -2,6 +2,7 @@ from fastapi import HTTPException
 from app.db.models import PostModel,LikesModel,CommentsModel
 import uuid
 from pathlib import Path
+import cloudinary.uploader
 
 def get_feed(db,limit,offset, current_user_id=None):
     posts = db.query(PostModel).order_by(PostModel.created_at.desc()).limit(limit).offset(offset).all()
@@ -77,17 +78,13 @@ def create_post(image,captions,db,auth_user):
         if not image.content_type or not image.content_type.startswith("image/"):
             raise HTTPException(status_code=400,detail = "Only image files are allowed")
 
-        extension = Path(image.filename).suffix.lower()
-        filename = f"{uuid.uuid4()}{extension}"
-
-        upload_dir = Path("app/uploads/posts")
-        upload_dir.mkdir(parents=True,exist_ok=True)
-        file_path = upload_dir/filename
-
-        with file_path.open("wb") as buffer:
-              buffer.write(image.file.read())
-
-        image_url = f"/uploads/posts/{filename}"
+        upload_result = cloudinary.uploader.upload(
+            image.file,
+            folder="posts",
+            public_id=f"{uuid.uuid4()}",
+            overwrite=True
+        )
+        image_url = upload_result.get("secure_url")
 
     new_post = PostModel(captions = captions,image_url = image_url,owner_id=auth_user.id)
 
@@ -113,17 +110,13 @@ def update_post(post_id : int,image,captions,db,auth_user):
         if not image.content_type or not image.content_type.startswith("image/"):
             raise HTTPException(status_code=400,detail = "Only image files are allowed")
 
-        extension = Path(image.filename).suffix.lower()
-        filename = f"{uuid.uuid4()}{extension}"
-
-        upload_dir = Path("app/uploads/posts")
-        upload_dir.mkdir(parents=True,exist_ok=True)
-        file_path = upload_dir/filename
-
-        with file_path.open("wb") as buffer:
-            buffer.write(image.file.read())
-
-        image_url = f"/uploads/posts/{filename}"
+        upload_result = cloudinary.uploader.upload(
+            image.file,
+            folder="posts",
+            public_id=f"{uuid.uuid4()}",
+            overwrite=True
+        )
+        image_url = upload_result.get("secure_url")
         post.image_url = image_url
 
     db.commit()
@@ -137,10 +130,7 @@ def delete_all(db,auth_user):
     if not posts:
         raise HTTPException(status_code=404, detail="No posts found")
 
-    image_paths = [
-           Path("app") / post.image_url.lstrip("/")
-           for post in posts if post.image_url
-       ]
+    image_urls = [post.image_url for post in posts if post.image_url]
 
     for post in posts:
         db.query(CommentsModel).filter(CommentsModel.post_id == post.id).delete()
@@ -148,9 +138,22 @@ def delete_all(db,auth_user):
         db.delete(post)
 
     db.commit()
-    for image_path in image_paths:
-        if image_path.exists():
-            image_path.unlink()
+    for url in image_urls:
+        if "cloudinary" in url:
+            try:
+                parts = url.split('/')
+                upload_idx = parts.index('upload')
+                path_parts = parts[upload_idx+1:]
+                if path_parts[0].startswith('v'):
+                    path_parts = path_parts[1:]
+                public_id = '/'.join(path_parts).rsplit('.', 1)[0]
+                cloudinary.uploader.destroy(public_id)
+            except Exception:
+                pass
+        else:
+            image_path = Path("app") / url.lstrip("/")
+            if image_path.exists():
+                image_path.unlink()
 
 
     return {"message": "All posts deleted"}
@@ -173,8 +176,20 @@ def delete_post(post_id : int,db,auth_user):
     db.commit()
 
     if image_url:
-        image_path = Path("app") / image_url.lstrip("/")
-        if image_path.exists():
-            image_path.unlink()
+        if "cloudinary" in image_url:
+            try:
+                parts = image_url.split('/')
+                upload_idx = parts.index('upload')
+                path_parts = parts[upload_idx+1:]
+                if path_parts[0].startswith('v'):
+                    path_parts = path_parts[1:]
+                public_id = '/'.join(path_parts).rsplit('.', 1)[0]
+                cloudinary.uploader.destroy(public_id)
+            except Exception:
+                pass
+        else:
+            image_path = Path("app") / image_url.lstrip("/")
+            if image_path.exists():
+                image_path.unlink()
 
     return {"message" : "Post deleted succcessfully"}

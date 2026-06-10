@@ -12,8 +12,12 @@ from app.routes.notification_routes import noti_router
 from fastapi.middleware.cors import CORSMiddleware
 import os
 from dotenv import load_dotenv
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
 load_dotenv()
+cloudinary.config(secure=True)
 
 app = FastAPI()
 

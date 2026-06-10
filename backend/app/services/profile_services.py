@@ -5,12 +5,13 @@ from app.services.follow_services import get_follow_stats
 from fastapi import HTTPException
 from pathlib import Path
 import uuid
+import cloudinary.uploader
 
 
 def profile(db,auth_user):
    stats = get_follow_stats(auth_user.id,db)
    posts_count = db.query(PostModel).filter(PostModel.owner_id == auth_user.id).count()
-   
+
    return {"id": auth_user.id,
            "email": auth_user.email,
            "username": auth_user.username,
@@ -58,24 +59,35 @@ def update_profile_pic(image,db,auth_user):
     if not image.content_type or not image.content_type.startswith("image/"):
         raise HTTPException(status_code=400,detail = "Only image files are allowed")
 
-    extension = Path(image.filename).suffix.lower()
-    filename = f"{uuid.uuid4()}{extension}"
+    upload_result = cloudinary.uploader.upload(
+        image.file,
+        folder="profile_pics",
+        public_id=f"{uuid.uuid4()}",
+        overwrite=True
+    )
+    image_url = upload_result.get("secure_url")
 
-    upload_dir = Path("app/uploads/profile_pics")
-    upload_dir.mkdir(parents=True,exist_ok=True)
-    file_path = upload_dir/filename
-
-    with file_path.open("wb") as buffer:
-          buffer.write(image.file.read())
-
-    image_url = f"/uploads/profile_pics/{filename}"
     old_profile_pic = auth_user.profile_pic
     auth_user.profile_pic = image_url
     db.commit()
+
     if old_profile_pic:
-          old_path = Path("app") / old_profile_pic.lstrip("/")
-          if old_path.exists():
-              old_path.unlink()
+        if "cloudinary" in old_profile_pic:
+            try:
+                parts = old_profile_pic.split('/')
+                upload_idx = parts.index('upload')
+                path_parts = parts[upload_idx+1:]
+                if path_parts[0].startswith('v'):
+                    path_parts = path_parts[1:]
+                public_id_with_ext = '/'.join(path_parts)
+                public_id = public_id_with_ext.rsplit('.', 1)[0]
+                cloudinary.uploader.destroy(public_id)
+            except Exception:
+                pass
+        else:
+            old_path = Path("app") / old_profile_pic.lstrip("/")
+            if old_path.exists():
+                old_path.unlink()
 
     db.refresh(auth_user)
     return auth_user

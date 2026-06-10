@@ -11,3 +11,4 @@ argon2-cffi
 email-validator
 python-multipart
 alembic
+cloudinary
