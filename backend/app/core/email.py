@@ -40,7 +40,7 @@ def send_verification_email(to_email, token):
     print(f"VERIFICATION LINK FOR {to_email}: {verification_link}", flush=True)
 
     resend_api_key = os.getenv("RESEND_API_KEY")
-    
+
     if not resend_api_key:
         print("Warning: RESEND_API_KEY is not set. Cannot send email.")
         return
@@ -49,16 +49,14 @@ def send_verification_email(to_email, token):
     req.add_header("Authorization", f"Bearer {resend_api_key}")
     req.add_header("Content-Type", "application/json")
     req.add_header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Auralis/1.0")
-    
-    # NOTE: Resend requires a verified domain to send from any address other than onboarding@resend.dev
-    # And onboarding@resend.dev can only send TO the email address you registered your Resend account with!
+
     data = {
-        "from": "Auralis <onboarding@resend.dev>", 
+        "from": "Auralis <onboarding@resend.dev>",
         "to": [to_email],
         "subject": "Verify your Auralis account",
         "html": html_body
     }
-    
+
     try:
         with urllib.request.urlopen(req, data=json.dumps(data).encode("utf-8"), timeout=10) as response:
             print(f"Resend success: {response.status}")

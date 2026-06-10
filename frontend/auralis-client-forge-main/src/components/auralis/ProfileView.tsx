@@ -145,7 +145,7 @@ export function ProfileView({
       </header>
 
       {/* Tabs */}
-      <div className="sticky top-0 z-10 -mx-4 border-y border-border/70 bg-background/85 px-4 backdrop-blur-md md:-mx-8 md:px-8">
+      <div className="sticky top-14 md:top-0 z-10 -mx-4 border-y border-border/70 bg-background/85 px-4 backdrop-blur-md md:-mx-8 md:px-8">
         <nav className="flex gap-1">
           {(["posts", "followers", "following"] as const).map((t) => (
             <button

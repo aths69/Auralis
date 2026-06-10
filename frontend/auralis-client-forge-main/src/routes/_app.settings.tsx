@@ -33,7 +33,7 @@ function SettingsPage() {
 
   return (
     <div className="pb-12">
-      <header className="sticky top-0 z-20 -mx-4 border-b border-border/70 bg-background/85 px-4 py-3 backdrop-blur-md md:-mx-8 md:px-8">
+      <header className="sticky top-14 md:top-0 z-20 -mx-4 border-b border-border/70 bg-background/85 px-4 py-3 backdrop-blur-md md:-mx-8 md:px-8">
         <h1 className="text-lg font-semibold tracking-tight text-foreground">Settings</h1>
         <p className="text-xs text-muted-foreground">Manage your account.</p>
       </header>
