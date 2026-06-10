@@ -17,6 +17,7 @@ class UserForPost(BaseModel):
     email: Optional[str] = None
     bio: Optional[str] = None
     avatar_url: Optional[str] = None
+    is_following: Optional[bool] = False
 
 class PostResponse(BaseModel):
     id : int
