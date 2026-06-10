@@ -51,7 +51,7 @@ def send_verification_email(to_email, token):
     req.add_header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Auralis/1.0")
 
     data = {
-        "from": "Auralis <onboarding@resend.dev>",
+        "from": EMAIL_FROM if EMAIL_FROM else "Auralis <noreply@auralis33.site>",
         "to": [to_email],
         "subject": "Verify your Auralis account",
         "html": html_body
