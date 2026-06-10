@@ -69,12 +69,26 @@ export function CommentsSheet({
   });
 
   const del = useMutation({
-    mutationFn: (commentId: string) =>
-      api(`/posts/${post.id}/comments/${commentId}`, { method: "DELETE" }),
+    mutationFn: async (commentId: string) => {
+      if (String(commentId).startsWith("tmp-")) return;
+      return api(`/posts/${post.id}/comments/${commentId}`, { method: "DELETE" });
+    },
+    onMutate: async (commentId) => {
+      await qc.cancelQueries({ queryKey: ["comments", post.id] });
+      const prev = qc.getQueryData<Comment[]>(["comments", post.id]);
+      qc.setQueryData<Comment[]>(["comments", post.id], (old) => 
+        (old ?? []).filter((c) => String(c.id) !== String(commentId))
+      );
+      return { prev };
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["comments", post.id] });
+      qc.invalidateQueries({ queryKey: ["feed"] });
     },
-    onError: (e: Error) => toast.error(e.message),
+    onError: (e: Error, _v, ctx) => {
+      if (ctx?.prev) qc.setQueryData(["comments", post.id], ctx.prev);
+      toast.error(e.message);
+    },
   });
 
   const items = Array.isArray(list.data) ? list.data : [];
@@ -140,7 +154,8 @@ export function CommentsSheet({
                             type="button"
                             onClick={() => del.mutate(c.id)}
                             aria-label="Delete comment"
-                            className="ml-auto rounded-md p-1 text-muted-foreground hover:bg-surface-2 hover:text-destructive"
+                            disabled={String(c.id).startsWith("tmp-")}
+                            className="ml-auto rounded-md p-1 text-muted-foreground hover:bg-surface-2 hover:text-destructive disabled:opacity-50"
                           >
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
