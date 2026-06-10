@@ -10,6 +10,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -130,19 +131,21 @@ export function PostCard({ post }: { post: Post }) {
             <time className="text-xs text-muted-foreground" dateTime={post.created_at}>
               {timeAgo(post.created_at)}
             </time>
-            {user && !isMine && (
-              <>
-                <span className="text-muted-foreground">·</span>
-                <button
-                  type="button"
+            <div className="ml-auto flex items-center gap-2">
+              {user && !isMine && (
+                <Button
                   onClick={() => follow.mutate(!post.user.is_following)}
-                  className="text-sm font-medium text-blue-500 hover:text-blue-600 transition-colors"
+                  variant={post.user.is_following ? "outline" : "default"}
+                  className={cn(
+                    "h-7 rounded-full px-3 text-xs font-medium",
+                    post.user.is_following
+                      ? "text-foreground"
+                      : "bg-foreground text-background hover:bg-foreground/90"
+                  )}
                 >
                   {post.user.is_following ? "Following" : "Follow"}
-                </button>
-              </>
-            )}
-            <div className="ml-auto">
+                </Button>
+              )}
               {isMine ? (
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
