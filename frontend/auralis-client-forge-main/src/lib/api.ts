@@ -142,6 +142,7 @@ export type Comment = {
   user: User;
   content: string;
   created_at: string;
+  parent_id?: string | number | null;
 };
 
 export type Notification = {

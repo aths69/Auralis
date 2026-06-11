@@ -14,6 +14,7 @@ def all_comments(post_id,db,limit,offset):
             "id": c.id,
             "content": c.comment,
             "created_at": c.created_at,
+            "parent_id": c.parent_id,
             "user": {
                 "id": c.user.id,
                 "username": c.user.username,
@@ -32,7 +33,12 @@ def add_comment(post_id,db,auth_user,comment):
     if not post:
         raise HTTPException(status_code=404,detail="Post not found")
 
-    new_comment = CommentsModel(comment = comment.content,user_id = auth_user.id,post_id = post_id)
+    if comment.parent_id:
+        parent_comment = db.query(CommentsModel).filter(CommentsModel.id == comment.parent_id).first()
+        if not parent_comment:
+            raise HTTPException(status_code=404, detail="Parent comment not found")
+
+    new_comment = CommentsModel(comment = comment.content,user_id = auth_user.id,post_id = post_id, parent_id=comment.parent_id)
 
     db.add(new_comment)
     if post.owner_id != auth_user.id:
@@ -51,6 +57,7 @@ def add_comment(post_id,db,auth_user,comment):
         "id": new_comment.id,
         "content": new_comment.comment,
         "created_at": new_comment.created_at,
+        "parent_id": new_comment.parent_id,
         "user": {
             "id": auth_user.id,
             "username": auth_user.username,

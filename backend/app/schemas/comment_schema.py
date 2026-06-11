@@ -5,6 +5,7 @@ from typing import Optional
 
 class Comment(BaseModel):
     content : str
+    parent_id: Optional[int] = None
 
 class UserForComment(BaseModel):
     id: int
@@ -17,6 +18,7 @@ class CommentResponse(BaseModel):
     id: int
     content: str
     created_at: datetime
+    parent_id: Optional[int] = None
     user: UserForComment
 
 class DeleteCommentResponse(BaseModel):

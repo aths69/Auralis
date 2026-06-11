@@ -58,6 +58,7 @@ class CommentsModel(Base):
     comment = Column(String,nullable=False)
     user_id = Column(Integer,ForeignKey("users.id"),nullable=False)
     post_id = Column(Integer,ForeignKey("posts.id"),nullable=False)
+    parent_id = Column(Integer, ForeignKey("comments.id", ondelete="CASCADE"), nullable=True)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     user = relationship("UsersModel",back_populates="comments")

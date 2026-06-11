@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Trash2 } from "lucide-react";
+import { Trash2, Reply, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   Sheet,
@@ -16,6 +16,88 @@ import { timeAgo } from "@/lib/format";
 import { UserAvatar } from "./UserAvatar";
 import { useAuth } from "@/lib/auth";
 import { Link } from "@tanstack/react-router";
+import { cn } from "@/lib/utils";
+
+function CommentItem({
+  comment,
+  replies,
+  depth = 0,
+  onReply,
+  onDelete,
+  currentUserId,
+}: {
+  comment: Comment;
+  replies: Comment[];
+  depth?: number;
+  onReply: (c: Comment) => void;
+  onDelete: (id: string) => void;
+  currentUserId?: string;
+}) {
+  const mine = currentUserId && comment.user?.id === currentUserId;
+  const childReplies = replies.filter((r) => String(r.parent_id) === String(comment.id));
+
+  return (
+    <li className={cn("flex flex-col gap-3 py-3", depth > 0 && "pt-2 pb-0")}>
+      <div className="flex gap-3">
+        <Link to="/u/$userId" params={{ userId: comment.user.id }} className="shrink-0">
+          <UserAvatar user={comment.user} size={depth > 0 ? 28 : 36} />
+        </Link>
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline gap-1.5 text-sm">
+            <Link
+              to="/u/$userId"
+              params={{ userId: comment.user.id }}
+              className="font-medium text-foreground hover:underline underline-offset-4"
+            >
+              {comment.user.username}
+            </Link>
+            <span className="text-xs text-muted-foreground">
+              {timeAgo(comment.created_at)}
+            </span>
+            {mine ? (
+              <button
+                type="button"
+                onClick={() => onDelete(comment.id)}
+                aria-label="Delete comment"
+                disabled={String(comment.id).startsWith("tmp-")}
+                className="ml-auto rounded-md p-1 text-muted-foreground hover:bg-surface-2 hover:text-destructive disabled:opacity-50"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            ) : null}
+          </div>
+          <p className={cn("mt-0.5 whitespace-pre-wrap break-words leading-relaxed text-foreground", depth > 0 ? "text-[13px]" : "text-sm")}>
+            {comment.content}
+          </p>
+          <div className="mt-1 flex items-center gap-3">
+            <button
+              onClick={() => onReply(comment)}
+              className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground hover:text-foreground"
+            >
+              <Reply className="h-3 w-3" />
+              Reply
+            </button>
+          </div>
+        </div>
+      </div>
+      {childReplies.length > 0 && (
+        <ul className={cn("ml-4 pl-4 border-l border-border/50", depth >= 3 && "ml-2 pl-2 border-l-0")}>
+          {childReplies.map((r) => (
+            <CommentItem
+              key={r.id}
+              comment={r}
+              replies={replies}
+              depth={depth + 1}
+              onReply={onReply}
+              onDelete={onDelete}
+              currentUserId={currentUserId}
+            />
+          ))}
+        </ul>
+      )}
+    </li>
+  );
+}
 
 export function CommentsSheet({
   post,
@@ -29,6 +111,7 @@ export function CommentsSheet({
   const { user } = useAuth();
   const qc = useQueryClient();
   const [text, setText] = useState("");
+  const [replyTo, setReplyTo] = useState<Comment | null>(null);
 
   const list = useQuery({
     queryKey: ["comments", post.id],
@@ -40,7 +123,7 @@ export function CommentsSheet({
     mutationFn: (content: string) =>
       api<Comment>(`/posts/${post.id}/comments`, {
         method: "POST",
-        body: { content },
+        body: { content, parent_id: replyTo?.id },
       }),
     onMutate: async (content) => {
       await qc.cancelQueries({ queryKey: ["comments", post.id] });
@@ -50,12 +133,14 @@ export function CommentsSheet({
         content,
         created_at: new Date().toISOString(),
         user: user ?? { id: "me", username: "you" },
+        parent_id: replyTo?.id,
       };
       qc.setQueryData<Comment[]>(["comments", post.id], (old) => [
         optimistic,
         ...(old ?? []),
       ]);
       setText("");
+      setReplyTo(null);
       return { prev };
     },
     onError: (_e, _v, ctx) => {
@@ -76,9 +161,22 @@ export function CommentsSheet({
     onMutate: async (commentId) => {
       await qc.cancelQueries({ queryKey: ["comments", post.id] });
       const prev = qc.getQueryData<Comment[]>(["comments", post.id]);
-      qc.setQueryData<Comment[]>(["comments", post.id], (old) => 
-        (old ?? []).filter((c) => String(c.id) !== String(commentId))
-      );
+      // Optimistically remove comment and all nested children
+      qc.setQueryData<Comment[]>(["comments", post.id], (old) => {
+        if (!old) return old;
+        const toDelete = new Set<string>([String(commentId)]);
+        let size = 0;
+        // Find all descendants
+        while (toDelete.size > size) {
+          size = toDelete.size;
+          for (const c of old) {
+            if (c.parent_id && toDelete.has(String(c.parent_id))) {
+              toDelete.add(String(c.id));
+            }
+          }
+        }
+        return old.filter((c) => !toDelete.has(String(c.id)));
+      });
       return { prev };
     },
     onSuccess: () => {
@@ -94,7 +192,13 @@ export function CommentsSheet({
   const items = Array.isArray(list.data) ? list.data : [];
 
   return (
-    <Sheet open={open} onOpenChange={onOpenChange}>
+    <Sheet open={open} onOpenChange={(v) => {
+      onOpenChange(v);
+      if (!v) {
+        setReplyTo(null);
+        setText("");
+      }
+    }}>
       <SheetContent
         side="bottom"
         className="flex h-[85svh] flex-col gap-0 rounded-t-3xl border-t border-border/70 p-0 sm:h-[75svh] sm:max-w-[560px] sm:rounded-t-2xl"
@@ -129,49 +233,31 @@ export function CommentsSheet({
               No comments yet. Start the conversation.
             </p>
           ) : (
-            <ul className="divide-y divide-border/70">
-              {items.map((c) => {
-                const mine = user?.id && c.user?.id === user.id;
-                return (
-                  <li key={c.id} className="flex gap-3 py-4">
-                    <Link to="/u/$userId" params={{ userId: c.user.id }}>
-                      <UserAvatar user={c.user} size={36} />
-                    </Link>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-baseline gap-1.5 text-sm">
-                        <Link
-                          to="/u/$userId"
-                          params={{ userId: c.user.id }}
-                          className="font-medium text-foreground hover:underline underline-offset-4"
-                        >
-                          {c.user.username}
-                        </Link>
-                        <span className="text-xs text-muted-foreground">
-                          {timeAgo(c.created_at)}
-                        </span>
-                        {mine ? (
-                          <button
-                            type="button"
-                            onClick={() => del.mutate(c.id)}
-                            aria-label="Delete comment"
-                            disabled={String(c.id).startsWith("tmp-")}
-                            className="ml-auto rounded-md p-1 text-muted-foreground hover:bg-surface-2 hover:text-destructive disabled:opacity-50"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        ) : null}
-                      </div>
-                      <p className="mt-1 whitespace-pre-wrap break-words text-sm leading-relaxed text-foreground">
-                        {c.content}
-                      </p>
-                    </div>
-                  </li>
-                );
-              })}
+            <ul className="divide-y divide-border/70 pb-4">
+              {items
+                .filter((c) => !c.parent_id)
+                .map((c) => (
+                  <CommentItem
+                    key={c.id}
+                    comment={c}
+                    replies={items}
+                    onReply={setReplyTo}
+                    onDelete={(id) => del.mutate(id)}
+                    currentUserId={user?.id}
+                  />
+                ))}
             </ul>
           )}
         </div>
 
+        {replyTo && (
+          <div className="flex items-center justify-between bg-surface-2/60 px-5 py-2 text-xs text-muted-foreground border-t border-border/70">
+            <span>Replying to <span className="font-medium text-foreground">@{replyTo.user.username}</span></span>
+            <button onClick={() => setReplyTo(null)} className="p-1 hover:text-foreground">
+              <X className="h-3.5 w-3.5" />
+            </button>
+          </div>
+        )}
         <form
           onSubmit={(e) => {
             e.preventDefault();
@@ -179,13 +265,13 @@ export function CommentsSheet({
             if (!t) return;
             create.mutate(t);
           }}
-          className="flex items-end gap-2 border-t border-border/70 bg-surface-2/40 px-4 py-3 pb-[max(env(safe-area-inset-bottom),12px)]"
+          className={cn("flex items-end gap-2 bg-surface-2/40 px-4 py-3 pb-[max(env(safe-area-inset-bottom),12px)]", !replyTo && "border-t border-border/70")}
         >
           <UserAvatar user={user} size={32} />
           <Textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
-            placeholder="Reply…"
+            placeholder={replyTo ? "Write a reply..." : "Write a comment..."}
             className="max-h-32 min-h-10 flex-1 resize-none rounded-2xl border border-border/70 bg-surface px-3 py-2 text-sm shadow-none focus-visible:ring-1 focus-visible:ring-ring"
             onKeyDown={(e) => {
               if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
@@ -201,7 +287,7 @@ export function CommentsSheet({
             disabled={!text.trim() || create.isPending}
             className="h-9 rounded-full bg-foreground px-4 text-background hover:bg-foreground/90"
           >
-            Reply
+            {replyTo ? "Reply" : "Post"}
           </Button>
         </form>
       </SheetContent>
