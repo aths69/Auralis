@@ -89,6 +89,12 @@ export async function api<T = unknown>(path: string, opts: Options = {}): Promis
   }
 
   if (!res.ok) {
+    if (res.status === 401) {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent("auralis_unauthorized"));
+      }
+    }
+
     const msg =
       (data && typeof data === "object" && "message" in data
         ? String((data as { message: unknown }).message)

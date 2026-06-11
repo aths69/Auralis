@@ -9,12 +9,12 @@ export const Route = createFileRoute("/_app")({
 });
 
 function AppLayout() {
-  const { loading, user } = useAuth();
+  const { loading, user, token } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (!getToken()) navigate({ to: "/login" });
-  }, [navigate]);
+    if (!token && !getToken()) navigate({ to: "/login" });
+  }, [navigate, token]);
 
   if (loading && !user) {
     return (

@@ -78,6 +78,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   }, []);
 
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      logout();
+    };
+    window.addEventListener("auralis_unauthorized", handleUnauthorized);
+    return () => window.removeEventListener("auralis_unauthorized", handleUnauthorized);
+  }, [logout]);
+
   const value = useMemo<AuthState>(
     () => ({ user, token, loading, login, signup, logout, refresh, setUser }),
     [user, token, loading, login, signup, logout, refresh],
