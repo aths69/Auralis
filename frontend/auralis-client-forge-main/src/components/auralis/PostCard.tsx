@@ -8,6 +8,7 @@ import {
   MoreHorizontal,
   Pencil,
   Trash2,
+  Pin,
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -98,6 +99,18 @@ export function PostCard({ post }: { post: Post }) {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const pin = useMutation({
+    mutationFn: () => api(`/posts/${post.id}/pin`, { method: "POST" }),
+    onSuccess: () => {
+      toast.success(post.is_pinned ? "Post unpinned" : "Post pinned");
+      qc.invalidateQueries({ queryKey: ["feed"] });
+      qc.invalidateQueries({ queryKey: ["user-posts"] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const isAdmin = user?.username?.toLowerCase() === "thedamndeveloper";
+
   const share = () => {
     if (typeof navigator !== "undefined" && "clipboard" in navigator) {
       navigator.clipboard.writeText(
@@ -113,6 +126,12 @@ export function PostCard({ post }: { post: Post }) {
 
   return (
     <article className="border-b border-border/70 px-1 py-5 first:pt-2 last:border-b-0">
+      {post.is_pinned && (
+        <div className="flex items-center gap-2 text-xs font-semibold text-muted-foreground mb-3 px-1">
+          <Pin className="h-3.5 w-3.5 fill-current" />
+          <span>Pinned</span>
+        </div>
+      )}
       <div className="flex gap-3">
         <Link to="/u/$userId" params={{ userId: post.user.id }} className="shrink-0">
           <UserAvatar user={post.user} size={40} />
@@ -158,6 +177,11 @@ export function PostCard({ post }: { post: Post }) {
                     </button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
+                    {isAdmin && (
+                      <DropdownMenuItem onClick={() => pin.mutate()}>
+                        <Pin className="mr-2 h-4 w-4" /> {post.is_pinned ? "Unpin from top" : "Pin to top"}
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem onClick={() => setEdit(true)}>
                       <Pencil className="mr-2 h-4 w-4" /> Edit
                     </DropdownMenuItem>

@@ -3,9 +3,10 @@ from app.db.models import PostModel,LikesModel,CommentsModel,FollowModel,Notific
 import uuid
 from pathlib import Path
 import cloudinary.uploader
+import os
 
 def get_feed(db,limit,offset, current_user_id=None):
-    posts = db.query(PostModel).order_by(PostModel.created_at.desc()).limit(limit).offset(offset).all()
+    posts = db.query(PostModel).order_by(PostModel.is_pinned.desc(), PostModel.created_at.desc()).limit(limit).offset(offset).all()
 
     feed = []
 
@@ -24,6 +25,7 @@ def get_feed(db,limit,offset, current_user_id=None):
             "captions": post.captions,
             "image_url": post.image_url,
             "created_at": post.created_at,
+            "is_pinned": post.is_pinned,
             "like_count": likes_count,
             "comment_count" : comments_count,
             "liked_by_me": liked_by_me,
@@ -58,6 +60,7 @@ def get_user_posts(user_id : int,db,limit,offset, current_user_id=None):
             "captions": post.captions,
             "image_url": post.image_url,
             "created_at": post.created_at,
+            "is_pinned": post.is_pinned,
             "like_count": likes_count,
             "comment_count" : comments_count,
             "liked_by_me": liked_by_me,
@@ -199,3 +202,24 @@ def delete_post(post_id : int,db,auth_user):
                 image_path.unlink()
 
     return {"message" : "Post deleted succcessfully"}
+
+def toggle_pin_post(post_id: int, db, auth_user):
+    # Only admin can pin/unpin. We check against ADMIN_USERNAME env var.
+    admin_username = os.getenv("ADMIN_USERNAME", "thedamndeveloper").lower()
+    if auth_user.username.lower() != admin_username:
+        raise HTTPException(status_code=403, detail="Only admins can pin posts")
+
+    post = db.query(PostModel).filter(PostModel.id == post_id).first()
+    if not post:
+        raise HTTPException(status_code=404, detail="Post not found")
+
+    new_pin_status = not post.is_pinned
+
+    if new_pin_status:
+        # Unpin all other posts first to ensure max one pinned post
+        db.query(PostModel).filter(PostModel.is_pinned == True).update({"is_pinned": False})
+
+    post.is_pinned = new_pin_status
+    db.commit()
+    db.refresh(post)
+    return {"message": "Post pinned successfully" if new_pin_status else "Post unpinned successfully"}

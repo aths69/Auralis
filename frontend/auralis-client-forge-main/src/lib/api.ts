@@ -134,6 +134,7 @@ export type Post = {
   like_count: number;
   comment_count: number;
   liked_by_me?: boolean;
+  is_pinned?: boolean;
 };
 
 export type Comment = {

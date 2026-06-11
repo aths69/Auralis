@@ -2,7 +2,7 @@ from app.db.database import get_db
 from app.schemas.posts_schema import PostResponse,CreateAndUpdateResponse
 from fastapi import APIRouter, Depends,Query,File,Form,UploadFile
 from sqlalchemy.orm import Session
-from app.services.post_services import create_post,update_post,delete_post,delete_all,get_feed,get_user_posts
+from app.services.post_services import create_post,update_post,delete_post,delete_all,get_feed,get_user_posts,toggle_pin_post
 from app.core.jwt import get_current_user
 from typing import List,Optional
 
@@ -31,3 +31,7 @@ def all_delete(db : Session = Depends(get_db),auth_user = Depends(get_current_us
 @post_router.delete("/delete/{post_id}")
 def post_delete(post_id :int,db : Session = Depends(get_db),auth_user = Depends(get_current_user)):
     return delete_post(post_id,db,auth_user)
+
+@post_router.post("/{post_id}/pin")
+def pin_post(post_id: int, db: Session = Depends(get_db), auth_user = Depends(get_current_user)):
+    return toggle_pin_post(post_id, db, auth_user)

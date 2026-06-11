@@ -32,6 +32,7 @@ class PostModel(Base):
     image_url = Column(String,nullable=True)
     owner_id = Column(Integer,ForeignKey("users.id"),nullable=False)
     created_at = Column(DateTime, default=lambda: datetime.now(timezone.utc))
+    is_pinned = Column(Boolean, default=False)
 
     user = relationship("UsersModel",back_populates="posts")
     likes = relationship("LikesModel",back_populates="post")

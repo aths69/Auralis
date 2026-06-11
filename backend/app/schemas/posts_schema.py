@@ -25,6 +25,7 @@ class PostResponse(BaseModel):
     captions : Optional[str] = None
     image_url : Optional[str] = None
     created_at : datetime
+    is_pinned: Optional[bool] = False
     like_count : int
     comment_count : int
     liked_by_me: Optional[bool] = False
@@ -36,3 +37,4 @@ class CreateAndUpdateResponse(BaseModel):
     image_url : Optional[str] = None
     owner_id : int
     created_at : datetime
+    is_pinned: Optional[bool] = False
