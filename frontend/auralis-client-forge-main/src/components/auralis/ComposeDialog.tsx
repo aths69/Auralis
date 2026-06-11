@@ -14,9 +14,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/lib/auth";
 import { UserAvatar } from "./UserAvatar";
 import { api } from "@/lib/api";
-import { cn } from "@/lib/utils";
-
-const MAX = 500;
 
 export function ComposeDialog({
   open,
@@ -79,7 +76,6 @@ export function ComposeDialog({
   const submit = () => {
     const text = content.trim();
     if (!text && !image) return;
-    if (text.length > MAX) return;
     
     const form = new FormData();
     if (text) form.append("captions", text);
@@ -90,8 +86,6 @@ export function ComposeDialog({
   };
 
   const pending = create.isPending || update.isPending;
-  const remaining = MAX - content.length;
-  const over = remaining < 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -130,19 +124,7 @@ export function ComposeDialog({
           ) : null}
         </div>
 
-        <div className="flex items-center justify-between gap-3 border-t border-border/70 bg-surface-2/50 px-5 py-3">
-          <span
-            className={cn(
-              "a-mono text-xs",
-              over
-                ? "text-destructive"
-                : remaining < 60
-                  ? "text-foreground/80"
-                  : "text-muted-foreground",
-            )}
-          >
-            {remaining}
-          </span>
+        <div className="flex items-center justify-end gap-3 border-t border-border/70 bg-surface-2/50 px-5 py-3">
           <div className="flex items-center gap-2">
             <button
               type="button"
@@ -163,7 +145,7 @@ export function ComposeDialog({
             </Button>
             <Button
               onClick={submit}
-              disabled={pending || (!content.trim() && !image) || over}
+              disabled={pending || (!content.trim() && !image)}
               className="rounded-full bg-foreground text-background hover:bg-foreground/90"
             >
               {pending ? "Posting…" : isEdit ? "Save" : "Post"}
